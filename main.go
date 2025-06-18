@@ -3,45 +3,77 @@ package main
 import "fmt"
 
 func main() {
-	fmt.Println("Galaxy Space Battle Test")
-	fmt.Println("========================")
+	fmt.Println("Galaxy Initialization Test")
+	fmt.Println("==========================")
 
-	ship1 := NewSpaceship("f1s1", "Destroyer Alpha", "Player1", 100, 10, 50, 25, 15)
-	ship2 := NewSpaceship("f1s2", "Cruiser Beta", "Player1", 150, 15, 75, 20, 12)
-	
-	ship3 := NewSpaceship("f2s1", "Fighter Gamma", "Player2", 80, 5, 30, 30, 20)
-	ship4 := NewSpaceship("f2s2", "Battleship Delta", "Player2", 200, 20, 100, 35, 8)
-
-	fleet1 := NewFleet("fleet1", "Player1", "Sector A", []Spaceship{ship1, ship2})
-	fleet2 := NewFleet("fleet2", "Player2", "Sector A", []Spaceship{ship3, ship4})
-
-	fmt.Printf("Fleet 1 (%s): %d ships\n", fleet1.Owner, len(fleet1.Ships))
-	for _, ship := range fleet1.Ships {
-		fmt.Printf("  %s - Hull:%d Armor:%d Shields:%d Attack:%d Speed:%d\n", 
-			ship.Name, ship.Hull, ship.Armor, ship.Shields, ship.Attack, ship.Speed)
+	players := []Player{
+		{ID: "p1", Name: "Terran Federation"},
+		{ID: "p2", Name: "Zephyrian Empire"},
+		{ID: "p3", Name: "Cosmic Alliance"},
+		{ID: "p4", Name: "Nova Collective"},
+		{ID: "p5", Name: "Stellar Republic"},
+		{ID: "p6", Name: "Void Consortium"},
+		{ID: "p7", Name: "Galactic Union"},
 	}
 
-	fmt.Printf("\nFleet 2 (%s): %d ships\n", fleet2.Owner, len(fleet2.Ships))
-	for _, ship := range fleet2.Ships {
-		fmt.Printf("  %s - Hull:%d Armor:%d Shields:%d Attack:%d Speed:%d\n", 
-			ship.Name, ship.Hull, ship.Armor, ship.Shields, ship.Attack, ship.Speed)
+	fmt.Printf("Initializing galaxy with %d players:\n", len(players))
+	for i, player := range players {
+		fmt.Printf("%d. %s (%s)\n", i+1, player.Name, player.ID)
 	}
 
-	fmt.Println("\nStarting battle...")
-	result := RunSpaceBattle(fleet1, fleet2)
+	galaxySize := 20
+	galaxy := InitializeGalaxy(players, galaxySize)
 
-	fmt.Println("\n==================================================")
-	PrintBattleResult(result)
+	fmt.Printf("\nGalaxy '%s' created with %d star systems\n", galaxy.Name, len(galaxy.StarSystems))
 
-	fmt.Println("\nDetailed battle log:")
-	for _, round := range result.Rounds {
-		fmt.Printf("Round %d:\n", round.RoundNumber)
-		for _, attack := range round.Attacks {
-			if attack.Hit {
-				fmt.Printf("  %s attacks %s for %d damage\n", attack.Attacker, attack.Target, attack.Damage)
-			} else {
-				fmt.Printf("  %s attacks %s but misses\n", attack.Attacker, attack.Target)
+	fmt.Println("\nPlayer Homeworlds:")
+	fmt.Println("==================")
+	for _, player := range players {
+		systems := galaxy.GetSystemsByOwner(player.ID)
+		if len(systems) > 0 {
+			system := systems[0]
+			homeworld := system.GetPlanetsByOwner(player.ID)[0]
+			
+			fmt.Printf("\n%s (%s):\n", player.Name, player.ID)
+			fmt.Printf("  System: %s at (%.1f, %.1f, %.1f)\n", 
+				system.Name, system.Coordinates.X, system.Coordinates.Y, system.Coordinates.Z)
+			fmt.Printf("  Star: %s (%s, %.1f solar masses, %dK)\n", 
+				system.Star.Name, system.Star.StarType, system.Star.Size, system.Star.Temperature)
+			fmt.Printf("  Homeworld: %s\n", homeworld.Name)
+			fmt.Printf("    Population: %d\n", homeworld.Population)
+			fmt.Printf("    Resources: Metals=%d Energy=%d Minerals=%d Food=%d Tech=%d\n",
+				homeworld.Resources.Metals, homeworld.Resources.Energy, 
+				homeworld.Resources.Minerals, homeworld.Resources.Food, homeworld.Resources.Technology)
+			fmt.Printf("    Facilities: %d total\n", len(homeworld.Facilities))
+			for _, facility := range homeworld.Facilities {
+				fmt.Printf("      %s (Level %d) - Output: %d\n", facility.Type, facility.Level, facility.Output)
+			}
+			fmt.Printf("    Other planets in system: %d\n", len(system.Planets)-1)
+		}
+	}
+
+	fmt.Println("\nNeutral Systems:")
+	fmt.Println("================")
+	neutralCount := 0
+	for _, system := range galaxy.StarSystems {
+		if system.ControlledBy == "" {
+			neutralCount++
+		}
+	}
+	fmt.Printf("Total neutral systems: %d\n", neutralCount)
+
+	if neutralCount > 0 {
+		fmt.Println("\nSample neutral systems:")
+		count := 0
+		for _, system := range galaxy.StarSystems {
+			if system.ControlledBy == "" && count < 3 {
+				fmt.Printf("  %s: %s star, %d planets at (%.1f, %.1f, %.1f)\n", 
+					system.Name, system.Star.StarType, len(system.Planets),
+					system.Coordinates.X, system.Coordinates.Y, system.Coordinates.Z)
+				count++
 			}
 		}
 	}
+
+	fmt.Println("\nGalaxy generation complete!")
 }
