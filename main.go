@@ -3,77 +3,106 @@ package main
 import "fmt"
 
 func main() {
-	fmt.Println("Galaxy Initialization Test")
-	fmt.Println("==========================")
+	fmt.Println("Galaxy Strategy Game - Turn-Based Test")
+	fmt.Println("======================================")
 
 	players := []Player{
 		{ID: "p1", Name: "Terran Federation"},
 		{ID: "p2", Name: "Zephyrian Empire"},
 		{ID: "p3", Name: "Cosmic Alliance"},
-		{ID: "p4", Name: "Nova Collective"},
-		{ID: "p5", Name: "Stellar Republic"},
-		{ID: "p6", Name: "Void Consortium"},
-		{ID: "p7", Name: "Galactic Union"},
 	}
 
-	fmt.Printf("Initializing galaxy with %d players:\n", len(players))
+	fmt.Printf("Starting game with %d players:\n", len(players))
 	for i, player := range players {
 		fmt.Printf("%d. %s (%s)\n", i+1, player.Name, player.ID)
 	}
 
-	galaxySize := 20
-	galaxy := InitializeGalaxy(players, galaxySize)
+	gameState := NewGameState(players, 15, 10)
+	
+	fmt.Printf("\nGame initialized: %d systems, %d turns max\n", len(gameState.Galaxy.StarSystems), gameState.MaxTurns)
 
-	fmt.Printf("\nGalaxy '%s' created with %d star systems\n", galaxy.Name, len(galaxy.StarSystems))
-
-	fmt.Println("\nPlayer Homeworlds:")
-	fmt.Println("==================")
+	// Show initial state
+	fmt.Println("\nInitial Player Status:")
+	fmt.Println("=====================")
 	for _, player := range players {
-		systems := galaxy.GetSystemsByOwner(player.ID)
+		fmt.Printf("%s: %s\n", player.Name, gameState.GetPlayerSummary(player.ID))
+	}
+
+	// Simulate a few turns
+	for turn := 1; turn <= 3 && !gameState.GameOver; turn++ {
+		fmt.Printf("\n============================================================")
+		fmt.Printf("\nTURN %d\n", turn)
+		fmt.Printf("============================================================\n")
+
+		// Generate sample orders for each player
+		addSampleOrders(&gameState)
+
+		// Process the turn
+		gameState.ProcessTurn()
+
+		// Show player status after turn
+		fmt.Println("\nPlayer Status After Turn:")
+		for _, player := range players {
+			fmt.Printf("%s: %s\n", player.Name, gameState.GetPlayerSummary(player.ID))
+		}
+	}
+
+	fmt.Println("\n============================================================")
+	fmt.Println("GAME SIMULATION COMPLETE")
+	fmt.Printf("============================================================\n")
+	
+	if gameState.GameOver && gameState.Winner != "" {
+		fmt.Printf("Winner: %s\n", gameState.Winner)
+	} else {
+		fmt.Println("Game still in progress")
+	}
+}
+
+func addSampleOrders(gs *GameState) {
+	fmt.Println("Generating sample orders for players...")
+	
+	for _, player := range gs.Players {
+		systems := gs.Galaxy.GetSystemsByOwner(player.ID)
 		if len(systems) > 0 {
-			system := systems[0]
-			homeworld := system.GetPlanetsByOwner(player.ID)[0]
+			homeworld := systems[0].GetPlanetsByOwner(player.ID)[0]
 			
-			fmt.Printf("\n%s (%s):\n", player.Name, player.ID)
-			fmt.Printf("  System: %s at (%.1f, %.1f, %.1f)\n", 
-				system.Name, system.Coordinates.X, system.Coordinates.Y, system.Coordinates.Z)
-			fmt.Printf("  Star: %s (%s, %.1f solar masses, %dK)\n", 
-				system.Star.Name, system.Star.StarType, system.Star.Size, system.Star.Temperature)
-			fmt.Printf("  Homeworld: %s\n", homeworld.Name)
-			fmt.Printf("    Population: %d\n", homeworld.Population)
-			fmt.Printf("    Resources: Metals=%d Energy=%d Minerals=%d Food=%d Tech=%d\n",
-				homeworld.Resources.Metals, homeworld.Resources.Energy, 
-				homeworld.Resources.Minerals, homeworld.Resources.Food, homeworld.Resources.Technology)
-			fmt.Printf("    Facilities: %d total\n", len(homeworld.Facilities))
-			for _, facility := range homeworld.Facilities {
-				fmt.Printf("      %s (Level %d) - Output: %d\n", facility.Type, facility.Level, facility.Output)
+			// Build facilities
+			buildOrder := Order{
+				PlayerID:  player.ID,
+				OrderType: string(OrderBuildFacility),
+				PlanetID:  homeworld.ID,
+				Parameters: map[string]interface{}{
+					"facility_type": "MetalMine",
+				},
+				Priority: 5,
 			}
-			fmt.Printf("    Other planets in system: %d\n", len(system.Planets)-1)
-		}
-	}
-
-	fmt.Println("\nNeutral Systems:")
-	fmt.Println("================")
-	neutralCount := 0
-	for _, system := range galaxy.StarSystems {
-		if system.ControlledBy == "" {
-			neutralCount++
-		}
-	}
-	fmt.Printf("Total neutral systems: %d\n", neutralCount)
-
-	if neutralCount > 0 {
-		fmt.Println("\nSample neutral systems:")
-		count := 0
-		for _, system := range galaxy.StarSystems {
-			if system.ControlledBy == "" && count < 3 {
-				fmt.Printf("  %s: %s star, %d planets at (%.1f, %.1f, %.1f)\n", 
-					system.Name, system.Star.StarType, len(system.Planets),
-					system.Coordinates.X, system.Coordinates.Y, system.Coordinates.Z)
-				count++
+			gs.AddOrder(buildOrder)
+			
+			// Upgrade existing facility
+			if len(homeworld.Facilities) > 0 {
+				upgradeOrder := Order{
+					PlayerID:  player.ID,
+					OrderType: string(OrderUpgradeFacility),
+					PlanetID:  homeworld.ID,
+					Parameters: map[string]interface{}{
+						"facility_type": homeworld.Facilities[0].Type,
+					},
+					Priority: 3,
+				}
+				gs.AddOrder(upgradeOrder)
 			}
+			
+			// Build ships
+			shipOrder := Order{
+				PlayerID:  player.ID,
+				OrderType: string(OrderBuildShip),
+				PlanetID:  homeworld.ID,
+				Parameters: map[string]interface{}{
+					"ship_type": "Fighter",
+				},
+				Priority: 4,
+			}
+			gs.AddOrder(shipOrder)
 		}
 	}
-
-	fmt.Println("\nGalaxy generation complete!")
 }
