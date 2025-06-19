@@ -1,8 +1,35 @@
 package main
 
-import "fmt"
+import (
+	"flag"
+	"fmt"
+)
 
 func main() {
+	serverMode := flag.Bool("server", false, "Run as server")
+	flag.Parse()
+	
+	if *serverMode {
+		runServer()
+		return
+	}
+	
+	runSimulation()
+}
+
+func runServer() {
+	players := []Player{
+		{ID: "player1", Name: "Terran Federation"},
+		{ID: "player2", Name: "Zephyrian Empire"},
+		{ID: "player3", Name: "Cosmic Alliance"},
+		{ID: "player4", Name: "Nova Collective"},
+	}
+	
+	server := NewGameServer(players, 20, 50, 30) // 30 second turns
+	server.StartServer(8080)
+}
+
+func runSimulation() {
 	fmt.Println("Galaxy Strategy Game - Turn-Based Test")
 	fmt.Println("======================================")
 
